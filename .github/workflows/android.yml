@@ -1,0 +1,90 @@
+name: Build Calculator APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up environment variables
+        run: |
+          echo "SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_JAR=$ANDROID_HOME/platforms/android-34/android.jar" >> $GITHUB_ENV
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Compile resources
+        run: |
+          aapt2 compile --dir app/src/main/res -o build/resources.zip
+
+      - name: Link resources and create APK
+        run: |
+          aapt2 link \
+            -I ${{ env.ANDROID_JAR }} \
+            --manifest app/src/main/AndroidManifest.xml \
+            build/resources.zip \
+            -o build/Calculator-unsigned.apk \
+            --min-sdk-version 21 \
+            --target-sdk-version 34
+
+      - name: Compile Java source
+        run: |
+          javac -source 8 -target 8 \
+            -bootclasspath ${{ env.ANDROID_JAR }} \
+            -d build \
+            app/src/main/java/com/example/calculator/MainActivity.java
+
+      - name: Convert to DEX
+        run: |
+          d8 build --output build --lib ${{ env.ANDROID_JAR }}
+
+      - name: Add classes.dex to APK
+        working-directory: build
+        run: |
+          zip -u Calculator-unsigned.apk classes.dex
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkey -v -keystore debug.keystore -alias androiddebugkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Sign APK
+        run: |
+          apksigner sign \
+            --ks debug.keystore \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            build/Calculator-unsigned.apk
+
+      - name: Rename APK
+        run: mv build/Calculator-unsigned.apk build/SimpleCalculator.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleCalculator-APK
+          path: build/SimpleCalculator.apk
+          retention-days: 30
+
+      - name: Display APK info
+        run: |
+          ls -lh build/SimpleCalculator.apk
+          file build/SimpleCalculator.apk

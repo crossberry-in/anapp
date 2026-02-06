@@ -1,0 +1,59 @@
+# Build outputs
+build/
+*.apk
+*.ap_
+*.aab
+
+# Gradle
+.gradle/
+build/
+
+# Local configuration
+local.properties
+*.iml
+.idea/
+
+# Keystore files
+*.keystore
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+.settings/
+.loadpath
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Android Studio
+*.iml
+.idea/
+.DS_Store
+build/
+
+# Signing
+*.jks
+*.keystore
